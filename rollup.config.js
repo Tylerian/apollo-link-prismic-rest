@@ -10,14 +10,19 @@ export default {
         { file: manifest.main, format: "cjs" },
         { file: manifest.module, format: "es" }
     ],
+    external: [
+        "apollo-link",
+        "apollo-link-rest",
+        "fetch-headers",
+        "graphql",
+        "tslib"
+    ],
     plugins: [
         /* tells rollup howto find in node_modules */
         resolver(),
         /* converts commonjs modules to es modules */
         commonjs({
-            include: "node_modules/**",
-            namedExports: {
-            }
+            include: "node_modules/**"
         }),
         /* transpiles ts files to plain javascript */
         typescript(),
