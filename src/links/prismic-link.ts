@@ -7,11 +7,6 @@ import {
     setContext
 } from "apollo-link-context";
 
-import {
-    default as Prismic
-} from "prismic-javascript";
-import { request } from "https";
-
 type PrismicLinkOptions = {
     accessToken: string;
     repository: string;
@@ -48,8 +43,7 @@ function PrismicLink(options: PrismicLinkOptions) {
 
     return context.concat(new RestLink({
         uri: endpoint,
-        customFetch: options.customFetch,
-
+        customFetch: options.customFetch
     }));
 }
 
