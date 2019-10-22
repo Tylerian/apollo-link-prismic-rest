@@ -1,54 +1,83 @@
 
-import{
+import {
     RestLink
 } from "apollo-link-rest";
 
 import {
     setContext
 } from "apollo-link-context";
+import { ApolloLink } from "apollo-link";
 
 type PrismicRestLinkOptions = {
-    accessToken: string;
+    /* Your prismic access token */
+    accessToken?: string;
+    /* A custom fetch impl. to handle REST calls */
+    customFetch?: (request: RequestInfo, init: RequestInit) => Promise<Response>;
+    /* Your prismic repository name */
     repository: string;
-    /* A custom fetch to handle REST calls */
-    customFetch?: any;
 }
 
-function PrismicRestLink(options: PrismicRestLinkOptions) {
-    const { accessToken, repository } = options;
-    const fetchapi = options.customFetch || fetch;
-    const endpoint = getPrismicApiEndpoint(repository, accessToken);
-    /*
-    const prismic  = async () => await Prismic.getApi(endpoint, {
-        accessToken: options.accessToken
-    });
-    */
+// @ts-ignore
+global.Headers = global.Headers || require("fetch-headers");
 
-    const context = setContext(async (_, context) => {
-        // const api = await prismic();
-        const response = await fetchapi(endpoint, {
+function PrismicRestLink(options: PrismicRestLinkOptions) {
+    const { 
+        accessToken,
+        customFetch,
+        repository
+    } = options;
+
+    const fetchapi = customFetch || fetch;
+    const endpoint = getPrismicApiEndpoint(repository);
+
+/*
+    // grab prismic's api master ref before querying
+    const context = setContext(async (_operation, _) => {
+        const tokenurl = `${endpoint}?access_token=${accessToken}`;
+        const response = await fetchapi(tokenurl, {
             headers: { Accept: 'application/json' }
         });
 
-        const masteref = await response.json();
+        const payload = await response.json();
+
+        console.log("[payload abc] --", payload);
 
         return {
             headers: {
-                ...context.headers,
-                "Prismic-Ref": masteref.masterRef.id,
-                "Authorization": `Token ${options.accessToken}`
+                "Accept": "random-str",
+                masterRef: payload.refs.filter(
+                    (ref: any) => ref.isMasterRef)[0]
             }
         };
     });
-
-    return context.concat(new RestLink({
+*/
+    const restLink = new RestLink({
         uri: endpoint,
-        customFetch: options.customFetch
-    }));
+        headers: {
+            Accept: "application/json"
+        },
+        customFetch: async (req, res) => {
+            const tokenurl = `${endpoint}?access_token=${accessToken}`;
+            const response = await fetchapi(tokenurl, {
+                headers: { Accept: 'application/json' }
+            });
+
+            const payload = await response.json();
+
+            const url = new URL(<string>req);
+                  url.searchParams.append("access_token", accessToken ?? "");
+                  url.searchParams.append("ref", payload.refs.filter((r: any) => r.isMasterRef)[0]?.ref);
+
+            return await fetchapi(url.toString(), res);
+        }
+    });
+    
+    // combine the two links into one
+    return restLink; // context.concat(restLink);
 }
 
-function getPrismicApiEndpoint(repository: string, accessToken: string) {
-    return `https://${repository}.cdn.prismic.io/api/v2?access_token=${accessToken}`;
+function getPrismicApiEndpoint(repository: string) {
+    return `https://${repository}.cdn.prismic.io/api/v2`;
 }
 
 export {

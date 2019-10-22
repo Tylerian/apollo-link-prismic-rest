@@ -1,7 +1,8 @@
+import { RestLink } from "apollo-link-rest";
 declare type PrismicRestLinkOptions = {
-    accessToken: string;
+    accessToken?: string;
+    customFetch?: (request: RequestInfo, init: RequestInit) => Promise<Response>;
     repository: string;
-    customFetch?: any;
 };
-declare function PrismicRestLink(options: PrismicRestLinkOptions): import("apollo-link").ApolloLink;
+declare function PrismicRestLink(options: PrismicRestLinkOptions): RestLink;
 export { PrismicRestLink };

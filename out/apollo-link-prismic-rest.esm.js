@@ -4486,65 +4486,68 @@ var RestLink = /** @class */ (function (_super) {
     return RestLink;
 }(ApolloLink));
 
-function setContext(setter) {
-    return new ApolloLink(function (operation, forward) {
-        var request = __rest(operation, []);
-        return new Observable(function (observer) {
-            var handle;
-            Promise.resolve(request)
-                .then(function (req) { return setter(req, operation.getContext()); })
-                .then(operation.setContext)
-                .then(function () {
-                handle = forward(operation).subscribe({
-                    next: observer.next.bind(observer),
-                    error: observer.error.bind(observer),
-                    complete: observer.complete.bind(observer),
-                });
-            })
-                .catch(observer.error.bind(observer));
-            return function () {
-                if (handle)
-                    handle.unsubscribe();
-            };
-        });
-    });
-}
-
+// @ts-ignore
+global.Headers = global.Headers || require("fetch-headers");
 function PrismicRestLink(options) {
     var _this = this;
-    var accessToken = options.accessToken, repository = options.repository;
-    var fetchapi = options.customFetch || fetch;
-    var endpoint = getPrismicApiEndpoint(repository, accessToken);
+    var accessToken = options.accessToken, customFetch = options.customFetch, repository = options.repository;
+    var fetchapi = customFetch || fetch;
+    var endpoint = getPrismicApiEndpoint(repository);
     /*
-    const prismic  = async () => await Prismic.getApi(endpoint, {
-        accessToken: options.accessToken
-    });
-    */
-    var context = setContext(function (_, context) { return __awaiter(_this, void 0, void 0, function () {
-        var response, masteref;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, fetchapi(endpoint, {
-                        headers: { Accept: 'application/json' }
-                    })];
-                case 1:
-                    response = _a.sent();
-                    return [4 /*yield*/, response.json()];
-                case 2:
-                    masteref = _a.sent();
-                    return [2 /*return*/, {
-                            headers: __assign(__assign({}, context.headers), { "Prismic-Ref": masteref.masterRef.id, "Authorization": "Token " + options.accessToken })
-                        }];
-            }
+        // grab prismic's api master ref before querying
+        const context = setContext(async (_operation, _) => {
+            const tokenurl = `${endpoint}?access_token=${accessToken}`;
+            const response = await fetchapi(tokenurl, {
+                headers: { Accept: 'application/json' }
+            });
+    
+            const payload = await response.json();
+    
+            console.log("[payload abc] --", payload);
+    
+            return {
+                headers: {
+                    "Accept": "random-str",
+                    masterRef: payload.refs.filter(
+                        (ref: any) => ref.isMasterRef)[0]
+                }
+            };
         });
-    }); });
-    return context.concat(new RestLink({
+    */
+    var restLink = new RestLink({
         uri: endpoint,
-        customFetch: options.customFetch
-    }));
+        headers: {
+            Accept: "application/json"
+        },
+        customFetch: function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            var tokenurl, response, payload, url;
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        tokenurl = endpoint + "?access_token=" + accessToken;
+                        return [4 /*yield*/, fetchapi(tokenurl, {
+                                headers: { Accept: 'application/json' }
+                            })];
+                    case 1:
+                        response = _b.sent();
+                        return [4 /*yield*/, response.json()];
+                    case 2:
+                        payload = _b.sent();
+                        url = new URL(req);
+                        url.searchParams.append("access_token", (accessToken !== null && accessToken !== void 0 ? accessToken : ""));
+                        url.searchParams.append("ref", (_a = payload.refs.filter(function (r) { return r.isMasterRef; })[0]) === null || _a === void 0 ? void 0 : _a.ref);
+                        return [4 /*yield*/, fetchapi(url.toString(), res)];
+                    case 3: return [2 /*return*/, _b.sent()];
+                }
+            });
+        }); }
+    });
+    // combine the two links into one
+    return restLink; // context.concat(restLink);
 }
-function getPrismicApiEndpoint(repository, accessToken) {
-    return "https://" + repository + ".cdn.prismic.io/api/v2?access_token=" + accessToken;
+function getPrismicApiEndpoint(repository) {
+    return "https://" + repository + ".cdn.prismic.io/api/v2";
 }
 
 export { PrismicRestLink };
