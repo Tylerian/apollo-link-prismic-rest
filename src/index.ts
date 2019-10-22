@@ -1,3 +1,3 @@
 export {
-    PrismicLink
+    PrismicRestLink
 } from "./links/prismic-link";

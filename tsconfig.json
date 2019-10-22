@@ -10,7 +10,7 @@
         "declarationDir": "out/types",
 
         /* Show diagnostic information. */
-        "diagnostics": true,
+        "diagnostics": false,
 
         /* Only emit ‘.d.ts’ declaration files. */
         "emitDeclarationOnly": true,

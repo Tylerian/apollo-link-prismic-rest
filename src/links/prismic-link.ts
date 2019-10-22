@@ -7,16 +7,16 @@ import {
     setContext
 } from "apollo-link-context";
 
-type PrismicLinkOptions = {
+type PrismicRestLinkOptions = {
     accessToken: string;
     repository: string;
     /* A custom fetch to handle REST calls */
-    customFetch: any;
+    customFetch?: any;
 }
 
-function PrismicLink(options: PrismicLinkOptions) {
+function PrismicRestLink(options: PrismicRestLinkOptions) {
     const { accessToken, repository } = options;
-    const fetchapi = fetch || options.customFetch;
+    const fetchapi = options.customFetch || fetch;
     const endpoint = getPrismicApiEndpoint(repository, accessToken);
     /*
     const prismic  = async () => await Prismic.getApi(endpoint, {
@@ -52,5 +52,5 @@ function getPrismicApiEndpoint(repository: string, accessToken: string) {
 }
 
 export {
-    PrismicLink
+    PrismicRestLink
 };

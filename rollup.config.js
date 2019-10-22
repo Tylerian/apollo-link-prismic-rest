@@ -1,19 +1,14 @@
 import manifest from "./package.json";
 import commonjs from "rollup-plugin-commonjs";
+import replace from "rollup-plugin-replace";
 import resolver from "rollup-plugin-node-resolve";
 import typescript from "rollup-plugin-typescript";
 
 export default {
     input: "src/index.ts",
     output: [
-        {
-            file: manifest.module,
-            format: "es"
-        },
-        {
-            file: manifest.main,
-            format: "cjs",
-        }
+        { file: manifest.main, format: "cjs" },
+        { file: manifest.module, format: "es" }
     ],
     plugins: [
         /* tells rollup howto find in node_modules */
